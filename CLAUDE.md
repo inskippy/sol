@@ -50,26 +50,22 @@ uv sync
 ## Running (current CLI)
 
 ```bash
-uv run python syllabus.py <project-name>   # focus on a project
-uv run python syllabus.py                  # interactive project selection
+uv run python cli.py <project-name>   # focus on a project
+uv run python cli.py                  # interactive project selection
 ```
 
-In-session: `quit` to exit, `switch <project>` to change focus.
+In-session: `quit` to exit, `switch <project>` to change focus, `r` to revert the last context update.
 
-## Target Module Architecture
-
-`syllabus.py` is the working foundation. The refactor splits it into:
+## Module Architecture (implemented)
 
 | File | Responsibility |
 |---|---|
-| `vault.py` | All Obsidian file I/O, sandboxed to `VAULT_PATH` |
-| `brain.py` | LLM interface — wraps Anthropic + Ollama with model toggle |
-| `telegram_bot.py` | Outbound push + inbound reply handler |
-| `scheduler.py` | Cron jobs: weekly nudge, intake absorption, drift check |
-| `cli.py` | Refactored `syllabus.py` — imports from above modules |
-| `state.py` | Reads/writes `_sol_state.json` for focus tracking |
-
-Build order: `vault.py` → `brain.py` → `telegram_bot.py` → `scheduler.py` → `cli.py`
+| `vault.py` | All Obsidian file I/O, sandboxed to `VAULT_PATH`; safety-model gating, revert, and `_sol_log.md` logging |
+| `brain.py` | LLM interface — wraps Anthropic (`haiku`/`sonnet`) + Ollama (`llama`, with silent haiku fallback); `parse_updates()` for the `<update_*>` tag protocol |
+| `state.py` | Reads/writes `_sol_state.json` — active focus, deferred projects, drift back-off |
+| `telegram_bot.py` | Outbound push (`send_nudge`); Phase 2 will add inbound reply handling |
+| `scheduler.py` | Cron jobs via APScheduler: weekly nudge, drift check, intake absorption (stub) |
+| `cli.py` | Interactive terminal session — imports from all of the above |
 
 ### Model strategy
 
