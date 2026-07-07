@@ -9,3 +9,15 @@ services:
       - .env
     environment:
       - VAULT_PATH=/vault
+
+  sol-telegram-listener:
+    build: .
+    container_name: sol-telegram-listener
+    restart: unless-stopped
+    command: ["uv", "run", "python", "-c", "import telegram_bot; telegram_bot.listen()"]
+    volumes:
+      - /volume1/docker/syncthing/vault/SOL:/vault
+    env_file:
+      - .env
+    environment:
+      - VAULT_PATH=/vault

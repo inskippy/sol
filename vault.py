@@ -9,6 +9,7 @@ load_dotenv()
 VAULT_PATH = Path(os.environ.get("VAULT_PATH")).resolve()
 PROJECTS_PATH = VAULT_PATH / "projects"
 GLOBAL_CONTEXT = VAULT_PATH / "_global_context.md"
+GLOBAL_TODO = VAULT_PATH / "_global_todo.md"
 SOL_LOG = VAULT_PATH / "_sol_log.md"
 
 _context_backups: dict[str, str] = {}
@@ -58,6 +59,23 @@ def read_file(project_name: str, filename: str) -> str:
     return "(file not found)"
 
 
+def build_context_block(active_project: str | None) -> str:
+    lines = [f"=== GLOBAL CONTEXT ===\n{read_context('_global')}\n"]
+
+    if active_project:
+        lines.append(f"=== ACTIVE PROJECT: {active_project} ===\n{read_context(active_project)}\n")
+        project_dir = PROJECTS_PATH / active_project
+        for md_file in sorted(project_dir.glob("*.md")):
+            if md_file.name == "_context.md":
+                continue
+            lines.append(f"=== {md_file.stem.upper()} ===\n{md_file.read_text(encoding='utf-8').strip()}\n")
+    else:
+        for project in list_projects():
+            lines.append(f"=== PROJECT: {project} ===\n{read_context(project)}\n")
+
+    return "\n".join(lines)
+
+
 def read_all_contexts() -> str:
     lines = [f"=== GLOBAL CONTEXT ===\n{read_context('_global')}\n"]
     for project in list_projects():
@@ -105,6 +123,30 @@ def write_file(project_name: str, filename: str, content: str) -> None:
     op = "updated" if path.exists() else "created"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+    _log_operation(op, path.relative_to(VAULT_PATH))
+
+
+def append_file(project_name: str, filename: str, content: str) -> None:
+    path = _ensure_in_vault(PROJECTS_PATH / project_name / filename)
+    op = "updated" if path.exists() else "created"
+    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    separator = f"\n\n*Added {timestamp}*\n" if existing else f"*Added {timestamp}*\n"
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(existing + separator + content, encoding="utf-8")
+    _log_operation(op, path.relative_to(VAULT_PATH))
+
+
+def append_global_todo(items: list[tuple[str, str]]) -> None:
+    if not items:
+        return
+    path = _ensure_in_vault(GLOBAL_TODO)
+    op = "updated" if path.exists() else "created"
+    existing = path.read_text(encoding="utf-8") if path.exists() else "## inbox\n"
+    new_lines = "".join(f"* [ ] {item} ({project})\n" for project, item in items)
+
+    path.write_text(existing + new_lines, encoding="utf-8")
     _log_operation(op, path.relative_to(VAULT_PATH))
 
 

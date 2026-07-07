@@ -52,6 +52,25 @@ Use update_file for task lists, roadmaps, and any structured content the user ed
 Use update_context for running memory/summaries only.
 Always show the user what you're proposing and obtain approval before writing it."""
 
+BRAINDUMP_PROMPT = """You are helping the user process a "brain dump" — a raw, unstructured stream of everything currently on their mind. You'll receive the full vault context (all projects and their current state) followed by the dump text.
+
+For each distinct thought or item in the dump, decide which existing project it belongs to. If nothing fits, file it under "the-lab" (the general backlog/catch-all project). Group items by project, and for each project touched, emit exactly one block:
+
+<update_file project="project-name" file="notes.md">
+* [ ] item text
+* [ ] another item for this same project
+</update_file>
+
+Format every item as a checkbox line (`* [ ] ...`), one per line, inside the block for its assigned project. Keep each item short and concrete — rephrase rambling thoughts into a clear actionable line where reasonable, but don't invent detail that wasn't there.
+
+After all the filing blocks, write 2-4 sentences recommending ONE project as this week's focus, considering the current active focus, any deferred/shelved projects, and everything you just filed. Be direct — this is a recommendation, not a question. End your response with exactly one final line in this exact format:
+RECOMMENDED_FOCUS: project-name"""
+
+FOCUS_NEGOTIATION_PROMPT = """You're continuing a conversation about what the user's focus should be this week. Their brain dump has already been filed into the vault — don't file anything again, just discuss the focus decision using the conversation so far and the vault context provided.
+
+Respond conversationally to what they just said, then end your response with exactly one final line in this exact format:
+RECOMMENDED_FOCUS: project-name"""
+
 
 def think(messages: list[dict], model: str | None = None, system: str = SYSTEM_PROMPT) -> str:
     model = model or DEFAULT_MODEL
@@ -116,3 +135,8 @@ def parse_updates(response_text: str) -> tuple[str, list[tuple[str, str]], list[
     clean = re.sub(file_pattern, '', clean, flags=re.DOTALL).strip()
 
     return clean, context_updates, file_updates
+
+
+def parse_recommended_focus(text: str) -> str | None:
+    match = re.search(r'^RECOMMENDED_FOCUS:\s*(\S+)\s*$', text, re.MULTILINE)
+    return match.group(1) if match else None

@@ -5,23 +5,6 @@ import state
 import vault
 
 
-def build_context_block(active_project: str | None) -> str:
-    lines = [f"=== GLOBAL CONTEXT ===\n{vault.read_context('_global')}\n"]
-
-    if active_project:
-        lines.append(f"=== ACTIVE PROJECT: {active_project} ===\n{vault.read_context(active_project)}\n")
-        project_dir = vault.PROJECTS_PATH / active_project
-        for md_file in sorted(project_dir.glob("*.md")):
-            if md_file.name == "_context.md":
-                continue
-            lines.append(f"=== {md_file.stem.upper()} ===\n{md_file.read_text(encoding='utf-8').strip()}\n")
-    else:
-        for project in vault.list_projects():
-            lines.append(f"=== PROJECT: {project} ===\n{vault.read_context(project)}\n")
-
-    return "\n".join(lines)
-
-
 def switch_project(project_name: str) -> None:
     current_state = state.load_state()
     state.set_focus(project_name, current_state)
@@ -53,7 +36,7 @@ def chat(active_project: str | None = None) -> None:
             print(f"  -> switched to {active_project}\n")
             continue
 
-        ctx_block = build_context_block(active_project)
+        ctx_block = vault.build_context_block(active_project)
         augmented_input = f"{ctx_block}\n---\nUser message: {user_input}"
         history.append({"role": "user", "content": augmented_input})
 
