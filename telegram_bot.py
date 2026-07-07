@@ -16,9 +16,26 @@ _BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 _CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 _AFFIRMATIVE = {"yes", "y", "confirm", "sounds good", "do it", "yeah", "yep"}
+_TELEGRAM_MAX_LENGTH = 4096
 
 _pending_file_confirmation: tuple[str, str, str] | None = None
 _focus_negotiation: dict | None = None
+
+
+def _chunk_text(text: str, max_length: int = _TELEGRAM_MAX_LENGTH) -> list[str]:
+    if len(text) <= max_length:
+        return [text]
+    chunks = []
+    while text:
+        if len(text) <= max_length:
+            chunks.append(text)
+            break
+        split_at = text.rfind("\n", 0, max_length)
+        if split_at <= 0:
+            split_at = max_length
+        chunks.append(text[:split_at])
+        text = text[split_at:].lstrip("\n")
+    return chunks
 
 
 def send_nudge(message: str) -> None:
@@ -28,7 +45,8 @@ def send_nudge(message: str) -> None:
     async def _send():
         bot = Bot(token=_BOT_TOKEN)
         async with bot:
-            await bot.send_message(chat_id=_CHAT_ID, text=message)
+            for chunk in _chunk_text(message):
+                await bot.send_message(chat_id=_CHAT_ID, text=chunk)
 
     asyncio.run(_send())
 
@@ -174,7 +192,8 @@ async def _handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not text:
         return
     reply = await asyncio.to_thread(_route_message, text)
-    await update.message.reply_text(reply)
+    for chunk in _chunk_text(reply):
+        await update.message.reply_text(chunk)
 
 
 def listen() -> None:

@@ -82,7 +82,7 @@ def think(messages: list[dict], model: str | None = None, system: str = SYSTEM_P
             response = _ollama_client.chat.completions.create(
                 model="llama3.2",
                 messages=[{"role": "system", "content": system}] + messages,
-                max_tokens=1500,
+                max_tokens=4096,
             )
             return response.choices[0].message.content or ""
         except Exception:
@@ -90,7 +90,7 @@ def think(messages: list[dict], model: str | None = None, system: str = SYSTEM_P
 
     response = _anthropic_client.messages.create(
         model=ANTHROPIC_MODELS[model],
-        max_tokens=1500,
+        max_tokens=4096,
         system=system,
         messages=messages,
     )
@@ -105,7 +105,7 @@ def think_stream(messages: list[dict], model: str | None = None, system: str = S
             stream = _ollama_client.chat.completions.create(
                 model="llama3.2",
                 messages=[{"role": "system", "content": system}] + messages,
-                max_tokens=1500,
+                max_tokens=4096,
                 stream=True,
             )
         except Exception:
@@ -119,7 +119,7 @@ def think_stream(messages: list[dict], model: str | None = None, system: str = S
 
     with _anthropic_client.messages.stream(
         model=ANTHROPIC_MODELS[model],
-        max_tokens=1500,
+        max_tokens=4096,
         system=system,
         messages=messages,
     ) as stream:
