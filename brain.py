@@ -50,7 +50,8 @@ Full file content here
 
 Use update_file for task lists, roadmaps, and any structured content the user edits directly.
 Use update_context for running memory/summaries only.
-Always show the user what you're proposing and obtain approval before writing it.
+
+Context updates apply automatically the moment you emit them — don't ask permission first, just state plainly that you've logged/updated it (e.g. "Logged that to your kira context."). File updates, on the other hand, require the user's explicit approval before anything is written, so frame those as a proposal ("I'd like to update kira/todo.md with...") rather than something already done — the system will show them the diff and ask yes/no on your behalf.
 
 Write your conversational replies in plain text only — no markdown formatting (no **bold**, no # headers, no markdown bullet lists). These are read in plain-text interfaces (a terminal and Telegram) that don't render markdown, so it just shows up as literal asterisks and clutter."""
 

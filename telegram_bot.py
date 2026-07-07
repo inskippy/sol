@@ -17,9 +17,11 @@ _CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 _AFFIRMATIVE = {"yes", "y", "confirm", "sounds good", "do it", "yeah", "yep"}
 _TELEGRAM_MAX_LENGTH = 4096
+_CHAT_HISTORY_LIMIT = 6  # last 6 messages (3 exchanges)
 
 _pending_file_confirmation: tuple[str, str, str] | None = None
 _focus_negotiation: dict | None = None
+_chat_history: list[dict] = []
 
 
 def _chunk_text(text: str, max_length: int = _TELEGRAM_MAX_LENGTH) -> list[str]:
@@ -146,15 +148,20 @@ def _resolve_file_confirmation(text: str) -> str:
 
 
 def _handle_chat(text: str) -> str:
-    global _pending_file_confirmation
+    global _pending_file_confirmation, _chat_history
     current_state = state.load_state()
     active_project = current_state.get("active_focus")
     model = current_state.get("active_model")
 
     context_block = vault.build_context_block(active_project)
     augmented = f"{context_block}\n---\nUser message: {text}"
-    raw = brain.think([{"role": "user", "content": augmented}], model=model)
+    messages = _chat_history + [{"role": "user", "content": augmented}]
+    raw = brain.think(messages, model=model)
     clean, context_updates, file_updates = brain.parse_updates(raw)
+
+    _chat_history.append({"role": "user", "content": text})
+    _chat_history.append({"role": "assistant", "content": clean})
+    _chat_history = _chat_history[-_CHAT_HISTORY_LIMIT:]
 
     notes = []
     for project, content in context_updates:
