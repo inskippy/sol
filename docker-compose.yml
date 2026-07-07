@@ -1,0 +1,11 @@
+services:
+  sol:
+    build: .
+    container_name: sol
+    restart: unless-stopped
+    volumes:
+      - /volume1/docker/syncthing/vault/SOL:/vault
+    env_file:
+      - .env
+    environment:
+      - VAULT_PATH=/vault
